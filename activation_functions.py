@@ -1,4 +1,4 @@
-def default_fn(neuron):
-  # print("temporary activation function, weights to next layer:", neuron.weights)
-  print(neuron.serialize())
-  return
+import math
+
+def sigmoid_logistic(activation_sum):
+  return 1 / (1 + math.exp(-activation_sum))

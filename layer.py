@@ -1,27 +1,33 @@
-from activation_functions import default_fn
+from activation_functions import sigmoid_logistic
 from neuron import Neuron
 import json
 
 class Layer:
   neurons_str = "neurons"
   next_layer_str = "next_layer"
+  input_layer_id = "input_layer"
+  output_layer_id = "output_layer"
 
-  def __init__(self, n_neurons=1, activation_fn=default_fn, id=0, next_layer=None):
+  def __init__(self, n_inputs=2, n_neurons=1, activation_fn=sigmoid_logistic, id=1, next_layer=None):
     super().__init__()
     self.id = id
     self.activation_fn = activation_fn
-    self.neurons = [Neuron(self, self.activation_fn) for x in range(0, n_neurons)]
+    self.neurons = [Neuron(self, self.activation_fn) for x in range(0, n_inputs)]
     self.next_layer = next_layer
-    self.next_layer_id = next_layer.id if next_layer else None
     self.initialize_neuron_weights()
 
-  def set_next_layer(self, next_layer):
-    if next_layer:
-      self.next_layer = next_layer
-      self.next_layer_id = next_layer.id
+  def process_input(self, inputs):
+    outputs = [0 for x in range(0, len(inputs))]
+    for i in range(0, len(inputs)):
+      result = self.neurons[i].activate(inputs=inputs, bias=0)
+      if result:
+        outputs[i] += result
+      else:
+        outputs[i] = inputs[i]
+    return outputs
 
-  def set_next_layer_id(self, next_layer_id):
-    self.next_layer_id = next_layer_id
+  def get_neurons_as_weights(self):
+    return [neuron.weights for neuron in self.neurons]
 
   def set_neurons_with_weights(self, weights):
     if (len(self.neurons)) != len(weights):
@@ -57,20 +63,17 @@ class Layer:
     serialized_layer = {}
     serialized_layer[Layer.neurons_str] = serialized_neurons
     serialized_layer[Layer.next_layer_str] = self.next_layer.id if self.next_layer else None
-    return json.dumps({ self.id: serialized_layer })
+    return serialized_layer
 
   @staticmethod
-  def deserialize(json_layer):
-    parsed = json.loads(json_layer)
-    keys = list(parsed.keys())
-    id = keys[0]
-    layer_json = parsed[id]
-    weights = [eval(x) for x in layer_json[Layer.neurons_str]]
-    next_layer_id = layer_json[Layer.next_layer_str]
+  def deserialize(id, json_layer):
+    weights = [x for x in json_layer[Layer.neurons_str]]
+    next_layer_id = json_layer[Layer.next_layer_str]
 
     layer = Layer()
     layer.set_neurons_with_weights(weights)
-    layer.set_next_layer_id(next_layer_id)
+    layer.id = id
+    layer.next_layer = Layer(id=next_layer_id)
 
     return layer
 
