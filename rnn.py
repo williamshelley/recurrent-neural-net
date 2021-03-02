@@ -38,6 +38,13 @@ class RNN:
 
     return outputs
 
+  def transfer_derivative(self, output):
+    return output * (1.0 - output)
+
+  # used for neurons in output layer
+  def backpropagate_error(self, output, expected_output):
+    return (expected_output - output) * self.transfer_derivative(output)
+
   def serialize(self):
     data = {}
     current_layer = self.input_layer
@@ -55,7 +62,6 @@ class RNN:
 
   def tofile(self, file):
     fileio.tojson(self.serialize(), file)
-    # print(self.serialize())
     return
 
   @classmethod
@@ -77,8 +83,6 @@ class RNN:
     while next_layer_id and next_layer_id not in visited:
       if str(next_layer_id) in data:
         json_next_layer = data[str(next_layer_id)]
-        # print(json_next_layer)
-        # print(next_layer_id)
         current_layer.next_layer = Layer.deserialize(next_layer_id, json_next_layer)
         
         current_layer = current_layer.next_layer

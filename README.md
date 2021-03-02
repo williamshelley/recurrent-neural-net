@@ -58,3 +58,22 @@ Create a RNN class that can:
 
 Add in backpropagation
 Add in sigmoid activation function instead of default_fn
+
+
+
+RNN = Array of layers
+Layer = Array of neurons
+Neuron = Dictionary w/ ```weights``` and ```bias``` keys
+
+RNN = [
+  Input Layer = [
+    ...
+  ],
+  Hidden Layer = [
+    Neuron = { weights: [w1, w2, ..., wn], bias: b },
+    ...
+  ],
+  Output Layer = [
+    ...
+  ]
+]
