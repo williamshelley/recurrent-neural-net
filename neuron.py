@@ -1,41 +1,27 @@
-import json
-import sys
+from weight import Weight
 from random import random
 
-class Neuron(object):
-  def __init__(self, layer, activation_fn, weights=None):
-    super().__init__()
-    self.layer = layer
-    self.activation_fn = activation_fn
-    self.weights = weights
-    
-  def initialize_weights(self):
-    if self.weights is None and self.layer.next_layer:
-      next_layer_neurons = self.layer.next_layer.neurons
-      n_neurons = len(next_layer_neurons)
-      self.weights = [random() for x in range(0, n_neurons)]
+class Neuron:
+  def __init__(self) -> None:
+    self.output = None
+    self.weights = []
+    self.bias = 1.0
 
-  def set_weights(self, new_weights):
-    self.weights = new_weights
-    return
+  def connect(self, next_neuron) -> None:
+    new_weight = Weight(input_neuron=self, output_neuron=next_neuron)
+    self.weights.append(new_weight)
+    return new_weight
 
-  def activate(self, inputs, bias=0):
-    activation_sum = bias
+  def is_output(self) -> bool:
+    return not self.weights
 
-    if self.weights is None:
-      return None
+  def __repr__(self) -> str:
+    return str(self)
+  
+  def __str__(self) -> str:
+    return "Out: " + str(self.output) + ", W: " + str(self.weights)
 
-    if len(inputs) != len(self.weights):
-      raise Exception("Input array length does not match neuron weights")
-    else:
-      for i in range(0, len(inputs)):
-        activation_sum += inputs[i] * self.weights[i]
-
-    return self.activation_fn(activation_sum)
-
-  def serialize(self):
-    return self.weights
-
-  @staticmethod
-  def deserialize(json_neuron):
-    return
+  @classmethod
+  def BiasNeuron(cls):
+    neuron = Neuron()
+    neuron.output = random()

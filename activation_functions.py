@@ -1,4 +1,7 @@
-import math
+from math import exp
 
-def sigmoid_logistic(activation_sum):
-  return 1 / (1 + math.exp(-activation_sum))
+def sigmoid(activation_sum):
+  return 1.0 / (1.0 + exp(-activation_sum))
+
+def sigmoidp(output):
+  return output * (1.0 - output)
