@@ -3,9 +3,9 @@ from activation_functions import sigmoid, sigmoidp
 from cost_functions import mse
 from tqdm import tqdm
 
-structure = [2,2,1]
+structure = [2,5,1]
 network = Network(structure)
-reps = 1000000
+reps = 100000
 alpha = 0.1
 
 
@@ -22,7 +22,7 @@ logical_and = [[t1, zero], [t2, zero], [t3, zero], [t4, one]]
 logical_or = [[t1, zero], [t2, one], [t3, one], [t4, one]]
 exclusive_or = [[t1, zero], [t2, one], [t3, one], [t4, zero]]
 dataset = logical_and
-dataset = logical_or
+# dataset = logical_or
 # dataset = exclusive_or
 
 for _ in tqdm(range(reps)):
