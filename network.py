@@ -1,4 +1,5 @@
 from neuron import Neuron
+from json import dumps, loads
 
 class Network:
   def __init__(self, structure) -> None:
@@ -21,11 +22,32 @@ class Network:
     self.network = network
 
   def __repr__(self) -> str:
+    return str(self) + "\n"
+
+  def __str__(self) -> str:
     result = ""
     for layer in self.network:
       result += "\n" + str(layer) + "\n"
-    result += "\n"
     return result
+
+  def serialize(self) -> str:
+    return dumps([[x.serialize() for x in layer] for layer in self.network])
+
+  def deserialize(self, serialized_network):
+    if serialized_network is None:
+      raise Exception("No serialized data avaialble")
+    
+    deserialized = serialized_network
+    if type(serialized_network) is str:
+      deserialized = loads(serialized_network)
+      
+    for l in range(len(deserialized)):
+      layer = deserialized[l]
+      for n in range(len(layer)):
+        neuron = layer[n]
+        self.network[l][n].deserialize(neuron)
+
+    return self
 
   def forward_propagate(self, inputs, actfn):
     if len(inputs) != len(self.network[0]):
@@ -59,18 +81,19 @@ class Network:
     return [x.output for x in self.network[-1]]
 
   # network, expected output, loss function, derivative of activation function
-  def backpropagate(self, expected, learning_rate, lossfn, actfnp):
+  def backpropagate(self, expected, learn_rate, lossfn, actfnp):
     output_layer = self.network[-1]
     L = len(self.network) - 1
 
     for i in range(len(output_layer)):
       neuron = output_layer[i]
-      gradient = (expected[i] - neuron.output) * actfnp(neuron.actsum)
+      # gradient = (expected[i] - neuron.output) * actfnp(neuron.actsum)
+      gradient = lossfn(a=neuron.output, e=expected[i]) * actfnp(neuron.actsum)
       neuron.gradient = gradient
-      self.backpropagate_hidden(neuron, learning_rate, actfnp)
+      self.backpropagate_hidden(neuron, learn_rate, actfnp)
 
   # L is the same layer that source neuron is in
-  def backpropagate_hidden(self, source, learning_rate, actfnp):
+  def backpropagate_hidden(self, source, learn_rate, actfnp):
     if source is None or source.layer < 1:
       return
     
@@ -81,9 +104,9 @@ class Network:
         if weight.output_neuron == source:
           gradient_wrt_w = weight.value * source.gradient * actfnp(neuron.actsum)
           new_gradient += gradient_wrt_w
-          weight_delta = learning_rate * source.gradient * neuron.output
+          weight_delta = learn_rate * source.gradient * neuron.output
           weight.value += weight_delta
-          bias_delta = -learning_rate * source.gradient
+          bias_delta = -learn_rate * source.gradient
           neuron.bias += bias_delta
       neuron.gradient = new_gradient
-      self.backpropagate_hidden(neuron, learning_rate, actfnp)
+      self.backpropagate_hidden(neuron, learn_rate, actfnp)

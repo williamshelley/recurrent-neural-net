@@ -7,4 +7,4 @@ class Weight:
     self.output_neuron = output_neuron
   
   def __repr__(self) -> str:
-      return str(self.value)
+    return str(self.value)
