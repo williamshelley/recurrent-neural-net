@@ -4,8 +4,11 @@ from random import random
 class Neuron:
   def __init__(self) -> None:
     self.output = None
+    self.actsum = None
     self.weights = []
-    self.bias = 1.0
+    self.bias = random()
+    self.gradient = None
+    self.layer = None
 
   def connect(self, next_neuron) -> None:
     new_weight = Weight(input_neuron=self, output_neuron=next_neuron)
@@ -19,9 +22,4 @@ class Neuron:
     return str(self)
   
   def __str__(self) -> str:
-    return "Out: " + str(self.output) + ", W: " + str(self.weights)
-
-  @classmethod
-  def BiasNeuron(cls):
-    neuron = Neuron()
-    neuron.output = random()
+    return "Out: " + str(self.output) + ", S: " + str(self.actsum) + ", W: " + str(self.weights)

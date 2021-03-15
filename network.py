@@ -3,9 +3,12 @@ from neuron import Neuron
 class Network:
   def __init__(self, structure) -> None:
     network = []
+    L = len(structure) - 1
     for l in range(len(structure)):
       this_layer_num_neurons = structure[l]
       layer = [Neuron() for _ in range(this_layer_num_neurons)]
+      for neuron in layer: neuron.layer = l
+
       network.append(layer)
 
     for l in range(len(network) - 1):
@@ -31,6 +34,7 @@ class Network:
     # set all neuron outputs to 0.0
     for layer in self.network:
       for neuron in layer:
+        neuron.actsum = 0.0
         neuron.output = 0.0
 
     # set input layer neuron outputs to the inputs
@@ -43,18 +47,14 @@ class Network:
       next_layer = self.network[l + 1]
   
       # if it's not the last hidden layer multiply weight by output
-      if l < len(self.network) - 2:
-        for neuron in layer:
-          for weight in neuron.weights:
-            weight.output_neuron.output += weight.value * neuron.output
-      else:
-        for neuron in layer:
-          for weight in neuron.weights:
-            weight.output_neuron.output += neuron.output
+      for neuron in layer:
+        for weight in neuron.weights:
+          weight.output_neuron.actsum += weight.value * neuron.output
 
       # apply activation function to all neuron outputs
       for neuron in next_layer:
-        neuron.output = actfn(neuron.output + neuron.bias)
+        neuron.actsum += neuron.bias
+        neuron.output = actfn(neuron.actsum)
 
     return [x.output for x in self.network[-1]]
 
@@ -62,30 +62,28 @@ class Network:
   def backpropagate(self, expected, learning_rate, lossfn, actfnp):
     output_layer = self.network[-1]
     L = len(self.network) - 1
-    for out_n in range(len(output_layer)):
-      output_neuron = output_layer[out_n]
-      error = lossfn(actual=output_neuron.output, expected=expected[out_n])
-      output_neuron.gradient = error * actfnp(output_neuron.output)
-      self.backpropagate_hidden(output_neuron, L, learning_rate, actfnp)
-    return
 
-  def backpropagate_hidden(self, source_neuron, l, learning_rate, actfnp):
-    if source_neuron is None or l < 0:
+    for i in range(len(output_layer)):
+      neuron = output_layer[i]
+      gradient = (expected[i] - neuron.output) * actfnp(neuron.actsum)
+      neuron.gradient = gradient
+      self.backpropagate_hidden(neuron, learning_rate, actfnp)
+
+  # L is the same layer that source neuron is in
+  def backpropagate_hidden(self, source, learning_rate, actfnp):
+    if source is None or source.layer < 1:
       return
     
-    bias_delta = -learning_rate * source_neuron.gradient
-    source_neuron.bias += bias_delta
-
-    for neuron in self.network[l - 1]:
-      error_gradient = source_neuron.gradient
+    layer = self.network[source.layer - 1]
+    for neuron in layer:
+      new_gradient = 0.0
       for weight in neuron.weights:
-        if weight.output_neuron == source_neuron:
-          delta = learning_rate * error_gradient * neuron.output
-          
-          weight.value += delta
-
-          new_gradient = weight.value * error_gradient * actfnp(neuron.output)
-
-          neuron.gradient = new_gradient
-          self.backpropagate_hidden(neuron, l-1, learning_rate, actfnp)
-    return
+        if weight.output_neuron == source:
+          gradient_wrt_w = weight.value * source.gradient * actfnp(neuron.actsum)
+          new_gradient += gradient_wrt_w
+          weight_delta = learning_rate * source.gradient * neuron.output
+          weight.value += weight_delta
+          bias_delta = -learning_rate * source.gradient
+          neuron.bias += bias_delta
+      neuron.gradient = new_gradient
+      self.backpropagate_hidden(neuron, learning_rate, actfnp)
