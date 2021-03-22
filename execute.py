@@ -1,47 +1,91 @@
 from network import Network
+from data import Data, T1, T2, T3, T4
 from activation_functions import sigmoid, sigmoidp
 from cost_functions import mse
 from tqdm import tqdm
 from fileio import write_json, read_json
+import requests
 
-structure = [2,4,1]
+
+EPOCHS = 10000
+LEARN_RATE = 0.1
+ERR_PRECISION = 0.001
+
+def iris_to_lst(x):
+  x = x[len("Iris-"):]
+  if x == "setosa":
+    return [1,0,0]
+  elif x == "versicolor":
+    return [0,1,0]
+  elif x == "virginica":
+    return [0,0,1]
+  else:
+    raise Exception("Error converting iris result to boolean list")
+
+def iris_to_data(row):
+  inputs = [float(x) for x in row[:-1]]
+  outputs = iris_to_lst(row[-1])
+  return [inputs, outputs]
+
+
+
+# use iris training --> 3 outputs, [1,0,0]=setosa, [0,1,0]=versicolor, [0,0,1]=virginica
+
+# recognizing numbers dataset
+
+# structure = [2,5,1]
+structure = [4,10,3]
 network = Network(structure)
-epochs = 100000
-learn_rate = 0.1
-network_file = "network.json"
+# network.deserialize(read_json("test.json"))
+iris_url = 'http://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
+req = requests.get(iris_url)
+data = req.text.strip().split("\n")
+data = [x.split(",") for x in data]
+dataset = [iris_to_data(x) for x in data]
+outfile = "iris-network.json"
+
+# dataset, outfile = Data.AND()
+# dataset, outfile = Data.OR()
+# dataset, outfile = Data.XOR()
+
+dic = {}
+for i in range(len(dataset)):
+  expected = str(dataset[i][1])
+  if expected in dic:
+    dic[expected] += 1
+  else:
+    dic[expected] = 1
+print(dic)
 
 
-t1 = [0,0]
-t2 = [0,1]
-t3 = [1,0]
-t4 = [1,1]
-
-zero = [0]
-one = [1]
-
-
-logical_and = [[t1, zero], [t2, zero], [t3, zero], [t4, one]]
-logical_or = [[t1, zero], [t2, one], [t3, one], [t4, one]]
-exclusive_or = [[t1, zero], [t2, one], [t3, one], [t4, zero]]
-
-dataset = logical_and
-
-serialized_network = read_json(network_file)
+serialized_network = read_json(outfile)
 network.deserialize(serialized_network)
 
-for _ in tqdm(range(epochs)):
-  for i in range(len(dataset)):
-    inputs = dataset[i][0]
-    expected = dataset[i][1]
+network.train(dataset, mse, sigmoid, sigmoidp, EPOCHS, LEARN_RATE, ERR_PRECISION)
+write_json(network.serialize(), outfile)
 
-    output = network.forward_propagate(inputs, sigmoid)
-    network.backpropagate(expected, learn_rate, mse, sigmoidp)
-    print("output:", output)
-    print(network)
+print(network.get_total_error(dataset, mse, sigmoid, sigmoidp))
+results = {}
+errors = []
+for i in range(len(dataset)):
+  result = network.forward_propagate(dataset[i][0], sigmoid)
+  rounded = [round(x) for x in result]
+  result_str = str(rounded)
+  if rounded != dataset[i][1]:
+    errors.append([i, rounded, dataset[i][1]])
+  if result_str in results:
+    results[result_str] += 1
+  else:
+    results[result_str] = 1
 
-write_json(network.serialize(), network_file)
+print(results)
+print(errors)
 
-print(network.forward_propagate(t1, sigmoid))
-print(network.forward_propagate(t2, sigmoid))
-print(network.forward_propagate(t3, sigmoid))
-print(network.forward_propagate(t4, sigmoid))
+# print(network.forward_propagate(dataset[0][0], sigmoid)) # [1,0,0]
+# print(network.forward_propagate(dataset[len(dataset) // 2][0], sigmoid)) # [0,1,0]
+# print(network.forward_propagate(dataset[-1][0], sigmoid)) # [0,0,1]
+
+# print(network.forward_propagate(T1, sigmoid)) # 0,0
+# print(network.forward_propagate(T2, sigmoid)) # 0,1
+# print(network.forward_propagate(T3, sigmoid)) # 1,0
+# print(network.forward_propagate(T4, sigmoid)) # 1,1

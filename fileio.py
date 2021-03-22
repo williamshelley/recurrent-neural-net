@@ -10,8 +10,7 @@ def write_json(serialized_data, file):
 def read_json(file):
   try:
     with open(file) as json_file:
-      data = json.load(json_file)
-      return json.loads(data)
+      return json.load(json_file)
   except IOError:
     print(file + " was not accessible")
     return None

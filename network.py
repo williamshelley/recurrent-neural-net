@@ -1,5 +1,7 @@
+from math import log
 from neuron import Neuron
 from json import dumps, loads
+from tqdm import tqdm
 
 class Network:
   def __init__(self, structure) -> None:
@@ -30,8 +32,19 @@ class Network:
       result += "\n" + str(layer) + "\n"
     return result
 
+  def get_total_error(self, dataset, lossfn, actfn, actfnp):
+    error = 0.0
+    for data in dataset:
+      input = data[0]
+      expected = data[1]
+      actual = self.forward_propagate(input, actfn)
+      for i in range(len(actual)):
+        error += abs(lossfn(a=actual[i], e=expected[i]))
+    error /= (1.0 * len(dataset))
+    return error
+
   def serialize(self) -> str:
-    return dumps([[x.serialize() for x in layer] for layer in self.network])
+    return [[x.serialize() for x in layer] for layer in self.network]
 
   def deserialize(self, serialized_network):
     if serialized_network is None:
@@ -48,6 +61,26 @@ class Network:
         self.network[l][n].deserialize(neuron)
 
     return self
+
+  def train(self, dataset, lossfn, actfn, actfnp, max_epochs, learn_rate, precision):
+    initial_error = self.get_total_error(dataset, lossfn, actfn, actfnp)
+    for epoch in tqdm(range(max_epochs)):
+      for i in range(len(dataset)):
+        inputs = dataset[i][0]
+        expected = dataset[i][1]
+        self.forward_propagate(inputs, actfn)
+        self.backpropagate(expected, learn_rate, lossfn, actfnp)
+
+      total_error = self.get_total_error(dataset, lossfn, actfn, actfnp)
+
+      if (epoch % (max_epochs // 10)) == 0:
+        learn_rate /= 1.05
+        # print(learn_rate, total_error)
+
+      if abs(total_error) <= abs(precision):
+        return
+
+    return
 
   def forward_propagate(self, inputs, actfn):
     if len(inputs) != len(self.network[0]):
@@ -87,7 +120,6 @@ class Network:
 
     for i in range(len(output_layer)):
       neuron = output_layer[i]
-      # gradient = (expected[i] - neuron.output) * actfnp(neuron.actsum)
       gradient = lossfn(a=neuron.output, e=expected[i]) * actfnp(neuron.actsum)
       neuron.gradient = gradient
       self.backpropagate_hidden(neuron, learn_rate, actfnp)
