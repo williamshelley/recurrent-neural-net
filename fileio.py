@@ -6,6 +6,7 @@ def write_json(serialized_data, file):
       return json.dump(serialized_data, outfile)
   except IOError:
     print(file + " could not be written to")
+    return None
 
 def read_json(file):
   try:
