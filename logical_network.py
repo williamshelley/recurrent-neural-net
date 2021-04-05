@@ -16,16 +16,17 @@ structure = [2,5,1]
 network = Network(structure, lossfn=mse, actfn=sigmoid, actfnp=sigmoidp)
 
 dataset, prefix = AND_DATA
-dataset, prefix = OR_DATA
-dataset, prefix = XOR_DATA
+# dataset, prefix = OR_DATA
+# dataset, prefix = XOR_DATA
 
 network.load_from_file(prefix=prefix)
 network_file = network.build_file_name(prefix)
 
-results = network.run(dataset)
-
-print(results)
 network.train(dataset, EPOCHS, LEARN_RATE, ERR_PRECISION)
+
+results = network.run(dataset)
+print("results:",results)
+
 network.write_to_file(prefix=prefix)
 
 total_network_err = network.get_total_error(dataset)

@@ -143,7 +143,6 @@ class Network:
   # network, expected output, loss function, derivative of activation function
   def backpropagate(self, expected, learn_rate):
     output_layer = self.network[-1]
-    L = len(self.network) - 1
 
     for i in range(len(output_layer)):
       neuron = output_layer[i]

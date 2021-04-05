@@ -5,7 +5,7 @@ from network import Network
 import requests
 
 EPOCHS = 10000
-LEARN_RATE = 0.05
+LEARN_RATE = 0.1
 ERR_PRECISION = 0.001
 
 def iris_to_lst(x):
@@ -38,9 +38,10 @@ network = Network(structure, lossfn=mse, actfn=sigmoid, actfnp=sigmoidp)
 prefix = "iris-network"
 network_file = network.build_file_name(prefix)
 
+network.load_from_file(prefix=prefix)
+
 network.train(dataset, EPOCHS, LEARN_RATE, ERR_PRECISION)
 
-network.load_from_file(prefix=prefix)
 results = network.run(dataset)
 network_total_error = network.get_total_error(dataset)
 print_summary(dataset, results, network_total_error, network_file)
